@@ -3,11 +3,11 @@ title: GeneViewer
 description: Get started building your docs site with Starlight.
 template: splash # Remove or comment out this line to display the site sidebar on this page.
 hero:
-  tagline: A per-gene visualization of genomic regions and custom tracks.
+  tagline: A lightweight and embeddable per-gene visualization of genomic regions, probes, and custom tracks.
   image:
     file: ../../assets/houston.webp
   actions:
-    - text: Quick Guide
+    - text: Get Started
       link: /guides/quick-guide/
       icon: right-arrow
     - text: Read the GeneViewer docs
@@ -19,23 +19,30 @@ hero:
 import { Card, CardGrid } from '@astrojs/starlight/components';
 import GeneViewer from '../../components/GeneViewer.astro';
 
+## Demo
+
+<GeneViewer />
+
+```html
+<gene-viewer viewerServer="/api/visualization" viewerId="homo_sapiens" />
+```
+
 ## Features
 
 <CardGrid stagger>
-	<Card title="Easily embeddable" icon="pencil">
-		Edit `src/content/docs/index.mdx` to see this page change.
+	<Card title="Embeddable" icon="puzzle">
+		Just drop the `<gene-viewer />` component into your page. Then create visualizations using our Python package.
 	</Card>
-	<Card title="Framework agnostic" icon="document">
-		Delete `template: splash` in `src/content/docs/index.mdx` to display a
-		sidebar on this page.
+	<Card title="Interactive visualization" icon="magnifier">
+		Users can zoom, select and hover to reveal detailed information on genes, probes, and custom tracks.
 	</Card>
-	<Card title="Custom tracks" icon="add-document">
-		Add Markdown or MDX files to `src/content/docs` to create new pages.
+	<Card title="Lightweight" icon="document">
+		Load data from Fasta, GTF, BED, and more. Cached and shared storage reduces load time and storage usage.
 	</Card>
-	<Card title="Built-in caching" icon="setting">
-		Edit your `sidebar` and other config in `astro.config.mjs`.
+	<Card title="Framework agnostic" icon="node">
+		Works with React, Vue, Svelte, and [many more](https://custom-elements-everywhere.com/). Seamlessly synchronizes with your app's state.
 	</Card>
-	<Card title="Various file formats" icon="open-book">
-		Learn more in [the Starlight Docs](https://starlight.astro.build/).
+	<Card title="Custom track support" icon="database">
+		Extend the visualization with your own tracks to generate custom visualizations for your use cases.
 	</Card>
 </CardGrid>

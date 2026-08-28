@@ -1,0 +1,21 @@
+---
+title: HTML Example
+description: A reference page in my new Starlight docs site.
+tableOfContents: false
+---
+
+import GeneViewer from '../../../components/GeneViewer.astro';
+
+<GeneViewer/>
+
+```html
+<gene-viewer
+    viewerServer="http://localhost:5000/api/visualization"
+    viewerId="homo_sapiens"
+    scaleFactor="1.2"
+></gene-viewer>
+
+<script type="module">
+    import '../../../../gene-viewer-lit/dist/src/gene-viewer.js';
+</script>
+```

@@ -3,17 +3,27 @@ title: Tracks
 description: A reference page in my new Starlight docs site.
 ---
 
-## JSON Schema
+## Schema
 
 Every such JSON file adheres to the following JSON Schema:
 
-```json
+```ts
+// types.ts
+export type Track = Feature[];
 
+interface Feature {
+    start: number;
+    end: number;
+    opacity?: number;
+    item_rgb?: string;
+    description?: string;
+}
 ```
 
 ## Example
 
 ```json
+// example.json
 {
     "restrictionSites": [
         [

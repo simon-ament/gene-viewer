@@ -2,60 +2,52 @@
 import { defineConfig } from 'astro/config';
 import starlight from '@astrojs/starlight';
 
+import vue from '@astrojs/vue';
+
+import svelte from '@astrojs/svelte';
+
+import react from '@astrojs/react';
+
 // https://astro.build/config
 export default defineConfig({
-	integrations: [
-		starlight({
-			title: 'GeneViewer',
-			social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
-			sidebar: [
-				{
-					label: 'Guides',
-					items: [{ autogenerate: { directory: 'guides' } }],
-				},
-				{
-					label: 'Examples',
-					items: [{ autogenerate: { directory: 'examples' } }],
-				},
-				{
-					label: 'Python Reference',
-					collapsed: true,
-					items: [
-						{
-							slug: 'python-reference/gene-viewer',
-						},
-						{
-							slug: 'python-reference/gene-viewer-server',
-						},
-						{
-							label: 'RegionsLoader',
-							items: [{ autogenerate: { directory: 'python-reference/RegionsLoader' } }],
-						},
-						{
-							label: 'SequencesLoader',
-							items: [{ autogenerate: { directory: 'python-reference/SequencesLoader' } }],
-						},
-						{
-							label: 'TrackLoader',
-							items: [{ autogenerate: { directory: 'python-reference/TrackLoader' } }],
-						},
-						{
-							label: 'Processor',
-							items: [{ autogenerate: { directory: 'python-reference/Processor' } }],
-						}
-					],
-				},
-				{
-					label: 'Web Component Reference',
-					collapsed: true,
-					items: [{ autogenerate: { directory: 'web-component-reference' } }],
-				},
-				{
-					label: 'JSON Format Reference',
-					collapsed: true,
-					items: [{ autogenerate: { directory: 'json-format-reference' } }],
-				},
-			],
-		}),
-	],
+    integrations: [starlight({
+        title: 'GeneViewer',
+        customCss: [
+            '@fontsource-variable/geist/wght.css',
+            './src/styles/custom.css',
+        ],
+        social: [{ icon: 'github', label: 'GitHub', href: 'https://github.com/withastro/starlight' }],
+        sidebar: [
+            {
+                label: 'Guides',
+                items: [{ autogenerate: { directory: 'guides' } }],
+            },
+            {
+                label: 'Examples',
+                items: [{ autogenerate: { directory: 'examples' } }],
+            },
+            {
+                label: 'Python Package',
+                collapsed: true,
+                items: [{ autogenerate: { directory: 'python' } }],
+            },
+            {
+                label: 'Web Component',
+                collapsed: true,
+                items: [{ autogenerate: { directory: 'web-component' } }],
+            },
+            {
+                label: 'JSON Format',
+                collapsed: true,
+                items: [{ autogenerate: { directory: 'json' } }],
+            },
+        ],
+        }), vue({
+            template: {
+                compilerOptions: {
+                    isCustomElement: (tag) => tag.includes('gene-viewer')
+                }
+            }
+            }
+        ), svelte(), react()],
 });

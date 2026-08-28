@@ -1,0 +1,37 @@
+---
+title: JS Framework Examples
+description: A reference page in my new Starlight docs site.
+tableOfContents: false
+---
+import { Aside } from '@astrojs/starlight/components';
+import { Icon } from '@astrojs/starlight/components';
+import { Code } from '@astrojs/starlight/components';
+
+import GeneViewerVue from '../../../components/GeneViewerVue.vue';
+import vueCode from '../../../components/GeneViewerVue.vue?raw';
+import GeneViewerReact from '../../../components/GeneViewerReact.jsx';
+import reactCode from '../../../components/GeneViewerReact.jsx?raw';
+import GeneViewerSvelte from '../../../components/GeneViewerSvelte.svelte';
+import svelteCode from '../../../components/GeneViewerSvelte.svelte?raw';
+
+As this page is built with [Astro](https://astro.build/), we can actually use multiple JS frameworks in the same page.
+The examples below indeed run using the specified framework using exactly the code shown below.
+
+## <Icon name="seti:react" size="1.2em" class="header-icon" /> React
+
+<GeneViewerReact client:only="react" />
+<Code code={reactCode} lang="jsx" title="GeneViewerReact.jsx" />
+
+## <Icon name="seti:vue" size="1.2em" class="header-icon" /> Vue
+
+<GeneViewerVue client:only="vue" />
+<Code code={vueCode} lang="vue" title="GeneViewerVue.vue" />
+
+<Aside type="tip">
+Don't forget to exclude the custom element from Vue component resolution. Follow the instruction in the [Vue docs](https://vuejs.org/guide/extras/web-components.html#using-custom-elements-in-vue).
+</Aside>
+
+## <Icon name="seti:svelte" size="1.2em" class="header-icon" /> Svelte
+
+<GeneViewerSvelte client:only="svelte" />
+<Code code={svelteCode} lang="svelte" title="GeneViewerSvelte.svelte" />
