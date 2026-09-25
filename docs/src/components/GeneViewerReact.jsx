@@ -1,4 +1,4 @@
-import '../../../../gene-viewer-lit/dist/src/gene-viewer.js'
+import 'gene-viewer'
 import { useEffect } from 'react';
 
 export default function GeneViewerReact() {
@@ -7,7 +7,7 @@ export default function GeneViewerReact() {
         element.addEventListener(
             'geneViewerReady',
             () => {
-                element.showGene('AARS1');
+                element.showGene('GSDMD');
             },
             { once: true }
         );
@@ -16,8 +16,8 @@ export default function GeneViewerReact() {
     return (
         <div className="viewer-shell">
             <gene-viewer
-                viewerServer="http://localhost:5000/api/visualization"
-                viewerId="homo_sapiens"
+                viewerServer="http://localhost:5000/visualization"
+                viewerId="human1"
                 scaleFactor="1.2"
             ></gene-viewer>
         </div>

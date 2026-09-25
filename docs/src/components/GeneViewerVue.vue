@@ -1,17 +1,17 @@
 <script setup>
-import '../../../../gene-viewer-lit/dist/src/gene-viewer.js'
+import 'gene-viewer'
 
 function onReady(event) {
     const { geneViewer } = event.detail;
-    geneViewer.showGene('AARS1');
+    geneViewer.showGene('GSDMD');
 }
 </script>
 
 <template>
     <div class="viewer-shell">
         <gene-viewer @geneViewerReady="onReady"
-            viewerServer="http://localhost:5000/api/visualization"
-            viewerId="homo_sapiens"
+            viewerServer="http://localhost:5000/visualization"
+            viewerId="human1"
             scaleFactor="1.2"
         ></gene-viewer>
     </div>
