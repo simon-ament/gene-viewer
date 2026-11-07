@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+from array import array
 from collections import defaultdict
 from io import StringIO  # for creating file-like objects from strings
 
@@ -206,12 +207,12 @@ class GTFFileIndex(GeneAwareFileIndex):
                 continue
             feature = _parse_GTF_line(line)
             gene_id = _get_GTF_attribute(feature["attributes"], self._gene_id_attribute)
-            if not gene_id:
+            if not gene_id or (self._gene_list is not None and gene_id not in self._gene_list):
                 position += len(line)
                 continue
 
             if gene_id not in index:
-                index[gene_id] = []
+                index[gene_id] = array("Q")
             index[gene_id].append(position)
             position += len(line)
 
@@ -286,7 +287,7 @@ class ODTFastaFileIndex(GeneAwareFileIndex):
                     fasta_parser.parse_fasta_header(line.strip())
                 )
                 gene_id = region_name.lstrip(">")
-                if not gene_id:
+                if not gene_id or (self._gene_list is not None and gene_id not in self._gene_list):
                     position += len(line)
                     continue
                 if gene_id not in index:

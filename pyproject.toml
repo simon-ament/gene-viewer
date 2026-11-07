@@ -16,3 +16,6 @@ dependencies = [
 [build-system]
 requires = ["hatchling >= 1.26"]
 build-backend = "hatchling.build"
+
+[project.urls]
+Repository = "https://github.com/simon-ament/gene-viewer-python"

@@ -1,3 +1,4 @@
+import hashlib
 import json
 from collections import defaultdict
 from dataclasses import asdict
@@ -171,7 +172,7 @@ class GeneViewer:
 
     # Save
 
-    def save(self):
+    def save(self, gene_list: list[str] | None = None):
         ### 1. Build Cache DAG
         dag_roots = {}
         region_loader_cache_ids = [loader.cache_id for loader in self.regions_loaders]
@@ -179,7 +180,8 @@ class GeneViewer:
             if output_type == "tracks":
                 cache_ids = [
                     f"{track_name}:{loader.cache_id}"
-                    for track_name, loader in loaders.items()
+                    for track_name, track_loaders in loaders.items()
+                    for loader in track_loaders
                 ]
             else:
                 cache_ids = [loader.cache_id for loader in loaders]
@@ -206,12 +208,15 @@ class GeneViewer:
             / f"{dag_roots['regions'].cache_id}"
             / "_metadata.json"
         )
+        all_gene_locations_raw: dict[str, list[dict]] | None = None
         if regions_cache_metadata_path.exists():
             with open(regions_cache_metadata_path, "r") as f:
                 regions_cache_metadata = json.load(f)
             all_gene_locations_raw: dict[str, list[dict]] = regions_cache_metadata.get(
-                "gene_locations", {}
+                "gene_locations", None
             )
+
+        if all_gene_locations_raw is not None:
             all_gene_locations = {
                 seq_id: [
                     GeneLocation(**gene_location) for gene_location in gene_locations
@@ -223,7 +228,14 @@ class GeneViewer:
             # from duplicate entries choose the first
             all_gene_locations = defaultdict(list)
             genes_seen = set()
+
             for loader in self.regions_loaders:
+                if gene_list is not None:
+                    print(f"Limiting regions loader {loader} to genes: {gene_list}")
+                    loader.limit_to_genes(gene_list)
+                if self.genes_without_probes == "ignore":
+                    loader.limit_to_genes(list(genes_with_probes))
+
                 for gene_locations in loader.gene_locations.values():
                     for gene_location in gene_locations:
                         if gene_location.id not in genes_seen:
@@ -232,13 +244,17 @@ class GeneViewer:
                                 gene_location
                             )
 
-        all_gene_locations_flattened = {}
+        all_gene_locations_by_gene = {}
         for gene_locations in all_gene_locations.values():
             for gene_location in gene_locations:
-                all_gene_locations_flattened[gene_location.id] = gene_location
-        all_gene_ids: set[str] = set(all_gene_locations_flattened.keys())
+                all_gene_locations_by_gene[gene_location.id] = gene_location
+        all_gene_ids: set[str] = set(all_gene_locations_by_gene.keys())
+        print(f"Found {len(all_gene_ids)} unique gene IDs in all regions loaders.")
 
-        if self.genes_without_probes == "ignore":
+        if gene_list is not None:
+            gene_ids_to_process = set(gene_list)
+            gene_ids_to_visualize = set(gene_list)
+        elif self.genes_without_probes == "ignore":
             gene_ids_to_process = genes_with_probes
             gene_ids_to_visualize = genes_with_probes
         elif self.genes_without_probes == "cache":
@@ -288,10 +304,10 @@ class GeneViewer:
         cctx = zstd.ZstdCompressor(level=3)
 
         for gene_id in gene_ids_to_process:
-            if gene_id not in all_gene_locations_flattened:
+            if gene_id not in all_gene_locations_by_gene:
                 continue  # Skip genes that are not found in the gene locations
 
-            gene_location = all_gene_locations_flattened[gene_id]
+            gene_location = all_gene_locations_by_gene[gene_id]
             gene_data = {}
             for output_type in self.loaders:
                 gene_data[output_type] = dag_roots[output_type].load_gene(
@@ -299,7 +315,7 @@ class GeneViewer:
                 )
 
             if gene_id in gene_ids_to_visualize:
-                gene_location = all_gene_locations_flattened[gene_id]
+                gene_location = all_gene_locations_by_gene[gene_id]
                 gene_data_visualization = {
                     "id": gene_id,
                     "seq_id": gene_location.seq_id,
@@ -373,7 +389,8 @@ class GeneViewer:
                 "genes_cached": list(gene_ids_to_process | genes_cached),
             }
 
-            if output_type == "regions":
+            if output_type == "regions" and self.genes_without_probes != "ignore" and gene_list is None:
+                # either write all gene locations or don't write any (genes without probes ignored or gene_list provided)
                 metadata["gene_locations"] = {
                     seq_id: [asdict(gene_location) for gene_location in gene_locations]
                     for seq_id, gene_locations in all_gene_locations.items()
@@ -388,12 +405,17 @@ class GeneViewer:
             self.dir_path / "visualizations" / f"{self.viewer_id}" / "_metadata.json",
         )
 
-    def save_raw(self):
+    def save_raw(self, gene_list: list[str] | None = None):
         ### 1. Determine which genes need to be visualized.
 
         all_gene_locations = defaultdict(list)
         genes_seen = set()
         for loader in self.regions_loaders:
+            if gene_list is not None:
+                print(f"Limiting regions loader {loader} to genes: {gene_list}")
+                loader.limit_to_genes(gene_list)
+            if self.genes_without_probes == "ignore":
+                loader.limit_to_genes(list(self.probes_loader.gene_list))
             for gene_locations in loader.gene_locations.values():
                 for gene_location in gene_locations:
                     if gene_location.id not in genes_seen:
@@ -405,6 +427,7 @@ class GeneViewer:
             for gene_location in gene_locations:
                 all_gene_locations_flattened[gene_location.id] = gene_location
         all_gene_ids: set[str] = set(all_gene_locations_flattened.keys())
+        print(f"Found {len(all_gene_ids)} unique gene IDs in all regions loaders.")
 
         if self.genes_without_probes == "visualize":
             gene_ids_to_visualize: set[str] = all_gene_ids
@@ -464,6 +487,77 @@ class GeneViewer:
             },
             self.dir_path / "visualizations" / f"{self.viewer_id}" / "_metadata.json",
         )
+
+    def plot(
+        self,
+        gene_id: str,
+        package_url: str = "https://cdn.jsdelivr.net/npm/gene-viewer@0.1.1/dist/src/gene-viewer.js/+esm",
+    ):
+        """Display one gene with the ``gene-viewer-custom`` web component.
+
+        ``package_url`` must be a JavaScript module URL that the browser running
+        Jupyter can access. The default uses jsDelivr's ``+esm`` transform so
+        that the package dependencies are browser-resolvable. For a local
+        checkout, build ``gene-viewer-lit`` and pass a URL to its generated
+        ``dist/src/gene-viewer.js`` file, for example
+        ``http://localhost:8000/dist/src/gene-viewer.js``.
+        """
+        try:
+            from IPython.display import HTML, display
+        except ImportError as error:
+            raise RuntimeError(
+                "GeneViewer.plot() requires IPython. Install it with "
+                "`pip install ipython`."
+            ) from error
+
+        gene_location = next(
+            (
+                gene_location
+                for loader in self.regions_loaders
+                for gene_locations in loader.gene_locations.values()
+                for gene_location in gene_locations
+                if gene_location.id == gene_id
+            ),
+            None,
+        )
+        if gene_location is None:
+            raise ValueError(
+                f"Gene {gene_id!r} was not found in the configured regions loaders."
+            )
+
+        gene = asdict(gene_location)
+        gene.update(
+            species=self.species,
+            source=self.source,
+            **self._get_gene_data(gene_location),
+        )
+
+        # JSON is embedded in a script element, so escape characters that can
+        # otherwise terminate the element before the JSON value is parsed.
+        gene_json = (
+            json.dumps(gene)
+            .replace("<", "\\u003c")
+            .replace(">", "\\u003e")
+            .replace("&", "\\u0026")
+        )
+        package_json = json.dumps(package_url)
+        element_id = "gene-viewer-" + hashlib.sha256(
+            f"{self.viewer_id}:{gene_id}".encode("utf-8")
+        ).hexdigest()[:16]
+
+        html = f"""
+<div id="{element_id}"></div>
+<script type="module">
+  import {package_json};
+
+  await customElements.whenDefined("gene-viewer-custom");
+  const viewer = document.createElement("gene-viewer-custom");
+  viewer.setGene({gene_json});
+  const container = document.getElementById("{element_id}");
+  container.replaceChildren(viewer);
+</script>
+"""
+        display(HTML(html))
 
     # Helpers
 
