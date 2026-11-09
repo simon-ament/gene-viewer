@@ -2,6 +2,8 @@ import hashlib
 import json
 from collections import defaultdict
 from dataclasses import asdict
+from functools import cache
+from importlib.resources import files
 from pathlib import Path
 from typing import Literal
 
@@ -231,7 +233,6 @@ class GeneViewer:
 
             for loader in self.regions_loaders:
                 if gene_list is not None:
-                    print(f"Limiting regions loader {loader} to genes: {gene_list}")
                     loader.limit_to_genes(gene_list)
                 if self.genes_without_probes == "ignore":
                     loader.limit_to_genes(list(genes_with_probes))
@@ -249,7 +250,6 @@ class GeneViewer:
             for gene_location in gene_locations:
                 all_gene_locations_by_gene[gene_location.id] = gene_location
         all_gene_ids: set[str] = set(all_gene_locations_by_gene.keys())
-        print(f"Found {len(all_gene_ids)} unique gene IDs in all regions loaders.")
 
         if gene_list is not None:
             gene_ids_to_process = set(gene_list)
@@ -301,6 +301,14 @@ class GeneViewer:
             indices[output_type] = {}
             offsets[output_type] = 0
 
+        viewer_dir = self.dir_path / "visualizations" / f"{self.viewer_id}"
+        if viewer_dir.exists():
+            for file in viewer_dir.iterdir():
+                if file.is_file():
+                    file.unlink()
+        else:
+            viewer_dir.mkdir(parents=True, exist_ok=True)
+
         cctx = zstd.ZstdCompressor(level=3)
 
         for gene_id in gene_ids_to_process:
@@ -332,10 +340,7 @@ class GeneViewer:
 
                 self._write_json(
                     gene_data_visualization,
-                    self.dir_path
-                    / "visualizations"
-                    / f"{self.viewer_id}"
-                    / f"{gene_id}.json",
+                    viewer_dir / f"{gene_id}.json",
                 )
 
             for output_type in self.loaders:
@@ -402,7 +407,7 @@ class GeneViewer:
             {
                 "gene_list": list(gene_ids_to_visualize),
             },
-            self.dir_path / "visualizations" / f"{self.viewer_id}" / "_metadata.json",
+            viewer_dir / "_metadata.json",
         )
 
     def save_raw(self, gene_list: list[str] | None = None):
@@ -412,7 +417,6 @@ class GeneViewer:
         genes_seen = set()
         for loader in self.regions_loaders:
             if gene_list is not None:
-                print(f"Limiting regions loader {loader} to genes: {gene_list}")
                 loader.limit_to_genes(gene_list)
             if self.genes_without_probes == "ignore":
                 loader.limit_to_genes(list(self.probes_loader.gene_list))
@@ -427,7 +431,6 @@ class GeneViewer:
             for gene_location in gene_locations:
                 all_gene_locations_flattened[gene_location.id] = gene_location
         all_gene_ids: set[str] = set(all_gene_locations_flattened.keys())
-        print(f"Found {len(all_gene_ids)} unique gene IDs in all regions loaders.")
 
         if self.genes_without_probes == "visualize":
             gene_ids_to_visualize: set[str] = all_gene_ids
@@ -457,6 +460,14 @@ class GeneViewer:
 
         ### 3. Generate and save raw gene data for all genes in the gene lists.
 
+        viewer_dir = self.dir_path / "visualizations" / f"{self.viewer_id}"
+        if viewer_dir.exists():
+            for file in viewer_dir.iterdir():
+                if file.is_file():
+                    file.unlink()
+        else:
+            viewer_dir.mkdir(parents=True, exist_ok=True)
+
         for gene_id in gene_ids_to_visualize:
             gene_data = self._get_gene_data(all_gene_locations_flattened[gene_id])
 
@@ -475,33 +486,41 @@ class GeneViewer:
 
             self._write_json(
                 gene_data_visualization,
-                self.dir_path
-                / "visualizations"
-                / f"{self.viewer_id}"
-                / f"{gene_id}.json",
+                viewer_dir / f"{gene_id}.json",
             )
 
         self._write_json(
             {
                 "gene_list": list(gene_ids_to_visualize),
             },
-            self.dir_path / "visualizations" / f"{self.viewer_id}" / "_metadata.json",
+            viewer_dir / "_metadata.json",
         )
 
-    def plot(
-        self,
-        gene_id: str,
-        package_url: str = "https://cdn.jsdelivr.net/npm/gene-viewer@0.1.1/dist/src/gene-viewer.js/+esm",
-    ):
-        """Display one gene with the ``gene-viewer-custom`` web component.
+    def plot(self, gene_id: str):
+        """Display one gene with the `gene-viewer-custom` web component.
 
-        ``package_url`` must be a JavaScript module URL that the browser running
-        Jupyter can access. The default uses jsDelivr's ``+esm`` transform so
-        that the package dependencies are browser-resolvable. For a local
-        checkout, build ``gene-viewer-lit`` and pass a URL to its generated
-        ``dist/src/gene-viewer.js`` file, for example
-        ``http://localhost:8000/dist/src/gene-viewer.js``.
+        The web component bundle shipped with this package is
+        embedded in the output, so plotting works offline and saved notebooks
+        render without network access.
         """
+
+        def _web_component_bundle() -> str:
+            """Returns the bundled `gene-viewer` web component shipped with the package."""
+            return (
+                files("gene_viewer")
+                .joinpath("static", "gene-viewer.bundle.js")
+                .read_text(encoding="utf-8")
+            )
+
+        def _script_json(value) -> str:
+            """Serializes `value` as JSON that can be embedded safely in a script element."""
+            return (
+                json.dumps(value)
+                .replace("<", "\\u003c")
+                .replace(">", "\\u003e")
+                .replace("&", "\\u0026")
+            )
+
         try:
             from IPython.display import HTML, display
         except ImportError as error:
@@ -525,6 +544,14 @@ class GeneViewer:
                 f"Gene {gene_id!r} was not found in the configured regions loaders."
             )
 
+        # Provide gene locations to loaders that require them for this specific gene
+        for loader in self.sequences_loaders:
+            loader.set_gene_locations({gene_location.seq_id: [gene_location]})
+        
+        for track_loaders in self.track_loaders.values():
+            for loader in track_loaders:
+                loader.set_gene_locations({gene_location.seq_id: [gene_location]})
+
         gene = asdict(gene_location)
         gene.update(
             species=self.species,
@@ -532,29 +559,35 @@ class GeneViewer:
             **self._get_gene_data(gene_location),
         )
 
-        # JSON is embedded in a script element, so escape characters that can
-        # otherwise terminate the element before the JSON value is parsed.
-        gene_json = (
-            json.dumps(gene)
-            .replace("<", "\\u003c")
-            .replace(">", "\\u003e")
-            .replace("&", "\\u0026")
-        )
-        package_json = json.dumps(package_url)
+        gene_json = _script_json(gene)
         element_id = "gene-viewer-" + hashlib.sha256(
             f"{self.viewer_id}:{gene_id}".encode("utf-8")
         ).hexdigest()[:16]
 
+        # Each output embeds the bundle so it renders independently of other
+        # cells. If the bundle is already loaded, it will not be loaded again.
+
         html = f"""
 <div id="{element_id}"></div>
 <script type="module">
-  import {package_json};
+  if (!customElements.get("gene-viewer-custom")) {{
+    const source = {_script_json(_web_component_bundle())};
+    const url = URL.createObjectURL(
+      new Blob([source], {{ type: "text/javascript" }})
+    );
+    try {{
+      await import(url);
+    }} finally {{
+      URL.revokeObjectURL(url);
+    }}
+  }}
 
   await customElements.whenDefined("gene-viewer-custom");
   const viewer = document.createElement("gene-viewer-custom");
   viewer.setGene({gene_json});
   const container = document.getElementById("{element_id}");
   container.replaceChildren(viewer);
+  viewer.style.padding = "1rem";
 </script>
 """
         display(HTML(html))
