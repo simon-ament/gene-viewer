@@ -1,0 +1,29 @@
+{
+  "name": "gene-viewer-monorepo",
+  "private": true,
+  "workspaces": [
+    "web-component",
+    "docs"
+  ],
+  "scripts": {
+    "build": "npm run build:web && npm run build -w gene-viewer-docs",
+    "build:web": "npm run build -w gene-viewer && node scripts/copy-bundle.mjs",
+    "build:docs": "npm run build:web && npm run build -w gene-viewer-docs",
+    "dev:web": "npm run start -w gene-viewer",
+    "dev:docs": "npm run build:web && npm run dev -w gene-viewer-docs",
+    "lint": "npm run lint -w gene-viewer",
+    "version:check": "node scripts/version.mjs check",
+    "version:set": "node scripts/version.mjs set",
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.0.11",
+    "lint-staged": "^15.2.7"
+  },
+  "lint-staged": {
+    "web-component/**/*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
+  }
+}

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Lint & build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - run: npm ci
+      - run: npm run version:check
+      - run: npm run lint
+      - name: Build web component, Python bundle and docs
+        run: npm run build
+
+      - name: Build Python distributions
+        run: |
+          python3 -m pip install build
+          python3 -m build
+      - name: Check that the wheel ships the web component bundle
+        run: unzip -l dist/*.whl | grep gene_viewer/static/gene-viewer.bundle.js

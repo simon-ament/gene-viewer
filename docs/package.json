@@ -1,5 +1,6 @@
 {
-  "name": "frontend",
+  "name": "gene-viewer-docs",
+  "private": true,
   "type": "module",
   "version": "0.0.1",
   "scripts": {
@@ -10,6 +11,7 @@
     "astro": "astro"
   },
   "dependencies": {
+    "@astrojs/markdown-remark": "^7.3.6",
     "@astrojs/react": "^7.1.4",
     "@astrojs/starlight": "^0.42.10",
     "@astrojs/svelte": "^9.1.2",
@@ -18,7 +20,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.4",
     "astro": "^7.4.7",
-    "gene-viewer": "^0.1.1",
+    "gene-viewer": "*",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "sharp": "^0.34.5",

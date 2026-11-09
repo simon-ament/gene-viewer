@@ -506,11 +506,14 @@ class GeneViewer:
 
         def _web_component_bundle() -> str:
             """Returns the bundled `gene-viewer` web component shipped with the package."""
-            return (
-                files("gene_viewer")
-                .joinpath("static", "gene-viewer.bundle.js")
-                .read_text(encoding="utf-8")
-            )
+            bundle = files("gene_viewer").joinpath("static", "gene-viewer.bundle.js")
+            if not bundle.is_file():
+                raise FileNotFoundError(
+                    "The gene-viewer web component bundle is missing. In a source "
+                    "checkout, run `npm install && npm run build:web` in the "
+                    "repository root."
+                )
+            return bundle.read_text(encoding="utf-8")
 
         def _script_json(value) -> str:
             """Serializes `value` as JSON that can be embedded safely in a script element."""

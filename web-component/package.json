@@ -6,7 +6,8 @@
   "version": "0.1.1",
   "repository": {
     "type": "git",
-    "url": "https://github.com/simon-ament/gene-viewer-lit"
+    "url": "git+https://github.com/simon-ament/gene-viewer.git",
+    "directory": "web-component"
   },
   "type": "module",
   "main": "dist/src/index.js",
@@ -21,10 +22,9 @@
     "start": "tsc && concurrently -k -r \"tsc --watch --preserveWatchOutput\" \"web-dev-server\"",
     "build": "tsc && npm run bundle && npm run analyze -- --exclude dist",
     "bundle": "esbuild dist/src/gene-viewer.js --bundle --format=esm --minify --target=es2021 --legal-comments=eof --outfile=dist/gene-viewer.bundle.js",
-    "prepublish": "tsc && npm run bundle && npm run analyze -- --exclude dist",
+    "prepublishOnly": "tsc && npm run bundle && npm run analyze -- --exclude dist",
     "lint": "eslint --ext .ts,.html . --ignore-path .gitignore && prettier \"**/*.ts\" --check --ignore-path .gitignore",
     "format": "eslint --ext .ts,.html . --fix --ignore-path .gitignore && prettier \"**/*.ts\" --write --ignore-path .gitignore",
-    "prepare": "husky",
     "test": "tsc && wtr --coverage",
     "test:watch": "tsc && concurrently -k -r \"tsc --watch --preserveWatchOutput\" \"wtr --watch\""
   },
@@ -43,11 +43,9 @@
     "@web/dev-server": "^0.4.6",
     "@web/test-runner": "^1.0.0",
     "concurrently": "^8.2.2",
-    "esbuild": "^0.25.12",
+    "esbuild": "^0.28.2",
     "eslint": "^8.57.0",
     "eslint-config-prettier": "^9.1.0",
-    "husky": "^9.0.11",
-    "lint-staged": "^15.2.7",
     "prettier": "^3.3.2",
     "typescript": "^5.5.3"
   },
@@ -80,10 +78,5 @@
     "singleQuote": true,
     "arrowParens": "avoid"
   },
-  "lint-staged": {
-    "*.ts": [
-      "eslint --fix",
-      "prettier --write"
-    ]
-  }
+  "homepage": "https://simon-ament.github.io/gene-viewer/"
 }

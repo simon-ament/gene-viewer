@@ -1,53 +1,82 @@
-name: Publish Package to PyPI
+name: Publish packages
 
+# One GitHub release (tag vX.Y.Z) publishes the Python package to PyPI and the
+# web component to npm. Both share the same version, see scripts/version.mjs.
 on:
   release:
     types: [published]
 
+permissions:
+  contents: read
+
 jobs:
   build:
-    name: Build distribution 📦
+    name: Build distributions 📦
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v6
-      with:
-        persist-credentials: false
-    - name: Set up Python
-      uses: actions/setup-python@v6
-      with:
-        python-version: "3.12"
-    - name: Install pypa/build
-      run: >-
-        python3 -m
-        pip install
-        build
-        --user
-    - name: Build a binary wheel and a source tarball
-      run: python3 -m build
-    - name: Store the distribution packages
-      uses: actions/upload-artifact@v5
-      with:
-        name: python-package-distributions
-        path: dist/
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          package-manager-cache: false # never use caching in release builds
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - run: npm ci
+      - name: Check that the release tag matches the package versions
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+        run: node scripts/version.mjs check "$TAG"
+      - name: Build web component bundle
+        run: npm run build:web
+      - name: Build a binary wheel and a source tarball
+        run: |
+          python3 -m pip install build --user
+          python3 -m build
+      - name: Store the Python distribution packages
+        uses: actions/upload-artifact@v5
+        with:
+          name: python-package-distributions
+          path: dist/
 
   pypi-publish:
-    name: >-
-      Publish Python 🐍 distribution 📦 to PyPI
-    needs:
-    - build
+    name: Publish Python 🐍 distribution 📦 to PyPI
+    needs: build
     runs-on: ubuntu-latest
     environment:
       name: pypi
       url: https://pypi.org/p/gene-viewer
     permissions:
-      id-token: write  # IMPORTANT: this permission is mandatory for trusted publishing
-
+      id-token: write # required for trusted publishing
     steps:
-    - name: Download all the dists
-      uses: actions/download-artifact@v6
-      with:
-        name: python-package-distributions
-        path: dist/
-    - name: Publish distribution 📦 to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+      - name: Download all the dists
+        uses: actions/download-artifact@v6
+        with:
+          name: python-package-distributions
+          path: dist/
+      - name: Publish distribution 📦 to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  npm-publish:
+    name: Publish web component 📦 to npm
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write # required for trusted publishing (OIDC)
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://registry.npmjs.org'
+          package-manager-cache: false # never use caching in release builds
+      - run: npm ci
+      # `prepublishOnly` builds the package before publishing.
+      - run: npm stage publish
+        working-directory: web-component
