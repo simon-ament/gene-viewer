@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <style>
+    body {
+      font-family: "Satoshi", system-ui, sans-serif;
+    }
+
+    /* gene-viewer-custom {
+      --gene-viewer-background-color: #d6f6c6;
+      --gene-viewer-text-color: #000;
+      --gene-viewer-border-color: #888;
+    } */
+  </style>
+</head>
+<body>
+  <div id="demo">
+      <gene-viewer-custom parallelProbesets="3" scaleFactor="1"></gene-viewer-custom>
+      <div style="height: 20rem;"></div>
+      <gene-viewer viewerServer="http://localhost:5000/visualization" viewerId="human3"></gene-viewer>
+  </div>
+
+  <script type="module">
+    import '../dist/src/gene-viewer.js';
+    import TestData from '../src/test.json' with { type: 'json' };
+
+
+    const geneViewer = document.querySelector('gene-viewer-custom');
+    geneViewer.setGene(TestData);
+    geneViewer.showProbesets(["Oligoset 1", "Oligoset 3", "Oligoset 2"]);
+    geneViewer.selectProbe("AARS1::12425");
+  </script>
+</body>
+</html>

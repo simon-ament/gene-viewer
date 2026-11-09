@@ -1,0 +1,48 @@
+---
+title: GeneViewer
+description: Get started building your docs site with Starlight.
+template: splash # Remove or comment out this line to display the site sidebar on this page.
+hero:
+  tagline: A lightweight and embeddable per-gene visualization of genomic regions, probes, and custom tracks.
+  image:
+    file: ../../assets/houston.webp
+  actions:
+    - text: Get Started
+      link: /guides/quick-guide/
+      icon: right-arrow
+    - text: Read the GeneViewer docs
+      link: https://starlight.astro.build
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+import GeneViewer from '../../components/GeneViewer.astro';
+
+## Demo
+
+<GeneViewer />
+
+```html
+<gene-viewer viewerServer="/api/visualization" viewerId="homo_sapiens" />
+```
+
+## Features
+
+<CardGrid stagger>
+	<Card title="Embeddable" icon="puzzle">
+		Just drop the `<gene-viewer />` component into your page. Then create visualizations using our Python package.
+	</Card>
+	<Card title="Interactive visualization" icon="magnifier">
+		Users can zoom, select and hover to reveal detailed information on genes, probes, and custom tracks.
+	</Card>
+	<Card title="Lightweight" icon="document">
+		Load data from Fasta, GTF, BED, and more. Cached and shared storage reduces load time and storage usage.
+	</Card>
+	<Card title="Framework agnostic" icon="node">
+		Works with React, Vue, Svelte, and [many more](https://custom-elements-everywhere.com/). Seamlessly synchronizes with your app's state.
+	</Card>
+	<Card title="Custom track support" icon="database">
+		Extend the visualization with your own tracks to generate custom visualizations for your use cases.
+	</Card>
+</CardGrid>
